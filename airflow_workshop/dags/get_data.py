@@ -42,7 +42,7 @@ def get_wp_descriptions():
     """
     truncate stg.work_programs  restart identity cascade;
     """)
-    # target_fields = ['id', 'academic_plan_in_field_of_study', 'wp_in_academic_plan']
+    target_fields = ['id', 'academic_plan_in_field_of_study', 'wp_in_academic_plan']
     url_down = 'https://op.itmo.ru/api/record/academic_plan/academic_wp_description/all?format=json&page=1'
     page = requests.get(url_down, headers=headers)
     c = json.loads(page.text)['count']
@@ -61,9 +61,9 @@ def get_wp_descriptions():
             res = data['results']
             for r in res:
                 df = pd.DataFrame([r], columns=r.keys())
-                # df['academic_plan_in_field_of_study'] = df[~df['academic_plan_in_field_of_study'].isna()]["academic_plan_in_field_of_study"].apply(lambda st_dict: json.dumps(st_dict))
-                # df['wp_in_academic_plan'] = df[~df['wp_in_academic_plan'].isna()]["wp_in_academic_plan"].apply(lambda st_dict: json.dumps(st_dict))
-                PostgresHook(postgres_conn_id='PG_WAREHOUSE_CONNECTION').insert_rows('stg.work_programs', df.values, target_fields = df.columns.tolist())
+                df['academic_plan_in_field_of_study'] = df[~df['academic_plan_in_field_of_study'].isna()]["academic_plan_in_field_of_study"].apply(lambda st_dict: json.dumps(st_dict))
+                df['wp_in_academic_plan'] = df[~df['wp_in_academic_plan'].isna()]["wp_in_academic_plan"].apply(lambda st_dict: json.dumps(st_dict))
+                PostgresHook(postgres_conn_id='PG_WAREHOUSE_CONNECTION').insert_rows('stg.work_programs', df.values, target_fields = target_fields)
         except ValueError:
             print(f"Ошибка JSON на странице {p}.")
             continue
@@ -211,29 +211,28 @@ def get_up_detail():
 #         }
 
 with DAG(dag_id='get_data', start_date=pendulum.datetime(2022, 1, 1, tz="UTC"), schedule_interval='0 1 * * *', catchup=False) as dag:
-    # t1 = PythonOperator(
-    # task_id='get_practice',
-    # python_callable=get_practice
-    # )
+    t1 = PythonOperator(
+    task_id='get_practice',
+    python_callable=get_practice
+    )
     t2 = PythonOperator(
     task_id='get_wp_descriptions',
     python_callable=get_wp_descriptions
     )
-    # t3 = PythonOperator(
-    # task_id='get_structural_units',
-    # python_callable=get_structural_units
-    # )
-    # t4 = PythonOperator(
-    # task_id='get_online_courses',
-    # python_callable=get_online_courses
-    # )
-    # t5 = PythonOperator(
-    # task_id='get_disc_by_year',
-    # python_callable=get_disc_by_year
-    # )
-    # t6 = PythonOperator(
-    # task_id='get_up_detail',
-    # python_callable=get_up_detail
-    # )
-t2
-# t1 >> t2 >> t3 >> t4 >> t5 >> t6
+    t3 = PythonOperator(
+    task_id='get_structural_units',
+    python_callable=get_structural_units
+    )
+    t4 = PythonOperator(
+    task_id='get_online_courses',
+    python_callable=get_online_courses
+    )
+    t5 = PythonOperator(
+    task_id='get_disc_by_year',
+    python_callable=get_disc_by_year
+    )
+    t6 = PythonOperator(
+    task_id='get_up_detail',
+    python_callable=get_up_detail
+    )
+t1 >> t2 >> t3 >> t4 >> t5 >> t6
