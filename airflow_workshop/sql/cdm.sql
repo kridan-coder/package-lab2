@@ -1,3 +1,29 @@
+-- Учебный план
+CREATE TABLE cdm.educational_program (
+    id INTEGER,
+    is_checked BOOLEAN, -- Есть ли статус "одобрен"
+    selection_year INTEGER, -- Год набора
+    laboriousness INTEGER, -- Трудоемкость
+    qualification TEXT -- Уровень образования (бакалавр, специалист, магистр)
+);
+
+-- Дисциплина
+CREATE TABLE cdm.disciplines (
+    id INTEGER,
+    is_checked BOOLEAN, -- Есть ли статус "одобрена"
+    discipline_code TEXT,
+    discipline_name TEXT,
+    unit_id INTEGER, -- ID структурного подразделения, связанного с дисциплиной
+    unit_name TEXT
+);
+
+-- Редактор
+CREATE TABLE cdm.discipline_redactors (
+    id INTEGER,
+    discipline_id INTEGER,
+    editor_name TEXT,
+);
+
 create table cdm.up_wp_statuses
 (edu_program_name text,
        selection_year integer,
