@@ -1,7 +1,7 @@
 import pendulum
 from airflow import DAG
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 
 def educational_programs ():
     PostgresHook(postgres_conn_id='PG_WAREHOUSE_CONNECTION').run(
@@ -48,7 +48,7 @@ def disciplines_redactors ():
     ON CONFLICT (discipline_id, redactor_id) DO NOTHING;
     """)
 
-with DAG(dag_id='stg_to_dds', start_date=pendulum.datetime(2022, 1, 1, tz="UTC"), schedule_interval='0 4 * * *', catchup=False) as dag:
+with DAG(dag_id='dds_to_cmd', start_date=pendulum.datetime(2022, 1, 1, tz="UTC"), schedule_interval='0 4 * * *', catchup=False) as dag:
     t1 = PythonOperator(
     task_id='educational_programs',
     python_callable=educational_programs 
