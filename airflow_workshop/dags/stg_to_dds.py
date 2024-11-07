@@ -156,8 +156,8 @@ def wp ():
     """
     INSERT INTO dds.wp
     with wp_desc as (
-        select
-            distinct json_array_elements(wp_in_academic_plan::json)->>'id' as wp_id,
+        select distinct
+            json_array_elements(wp_in_academic_plan::json)->>'id' as wp_id,
             json_array_elements(wp_in_academic_plan::json)->>'discipline_code' as discipline_code,
             json_array_elements(wp_in_academic_plan::json)->>'description' as wp_description,
             json_array_elements(wp_in_academic_plan::json)->>'status' as wp_status,
@@ -167,10 +167,11 @@ def wp ():
         from stg.work_programs
     ),
     wp_unit as (
-        select fak_id,
+        select distinct
+            fak_id,
             wp_list::json->>'id' as wp_id,
             wp_list::json->>'title' as wp_title,
-            (wp_list::json->>'discipline_code') as discipline_code,
+            wp_list::json->>'discipline_code' as discipline_code,
             valid_from,
             valid_to,
             is_current
@@ -184,13 +185,13 @@ def wp ():
             s.id AS wp_status,
             wp_unit.fak_id AS unit_id,
             wp_desc.wp_description,
+            MAX(wp_desc.valid_from) OVER (PARTITION BY wp_desc.discipline_code) AS valid_from,
+            MIN(wp_desc.valid_to) OVER (PARTITION BY wp_desc.discipline_code) AS valid_to,
+            wp_desc.is_current AND wp_unit.is_current AS is_current,
             ROW_NUMBER() OVER (
                 PARTITION BY wp_desc.wp_id, wp_desc.discipline_code, wp_desc.wp_description, wp_unit.fak_id
                 ORDER BY wp_unit.wp_title
-            ) AS row_num,
-            MAX(wp_desc.valid_from) OVER (PARTITION BY wp_desc.wp_id, wp_desc.discipline_code, wp_desc.wp_description, wp_unit.fak_id) AS valid_from,
-            MIN(wp_desc.valid_to) OVER (PARTITION BY wp_desc.wp_id, wp_desc.discipline_code, wp_desc.wp_description, wp_unit.fak_id) AS valid_to,
-            wp_desc.is_current AND wp_unit.is_current AS is_current
+            ) AS row_num
         FROM wp_desc
         LEFT JOIN wp_unit ON wp_desc.discipline_code = wp_unit.discipline_code
         LEFT JOIN dds.states s ON wp_desc.wp_status = s.cop_state
@@ -201,12 +202,9 @@ def wp ():
         wp_title, 
         wp_status, 
         unit_id, 
-        wp_description,
-        valid_from,
-        valid_to,
-        is_current
-    FROM wp_combined
-    WHERE row_num = 1;
+        wp_description
+    FROM wp_combined JOIN dds.units ON unit_id = dds.units.id
+    WHERE row_num = 1
     """)
 
 def wp_inter ():
